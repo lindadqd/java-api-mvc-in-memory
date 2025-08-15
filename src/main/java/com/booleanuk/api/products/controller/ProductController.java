@@ -12,8 +12,8 @@ import java.util.List;
 
 
 @RestController
-    @RequestMapping("products")
-    public class ProductController {
+@RequestMapping("products")
+public class ProductController {
     private ProductRepository productRepository;
 
     public ProductController() {
@@ -22,14 +22,20 @@ import java.util.List;
 
     @GetMapping
     public ArrayList<Product> getAll() {
-        return this.productRepository.getAll();
+        ArrayList<Product> products = productRepository.getAll();
+        if (products.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No products of the provided category were found");
+        }
+        return products;
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Product createProduct(@RequestBody Product newProduct){
-        this.productRepository.addProduct(newProduct);
-        return newProduct;
+    public ResponseEntity<String> createProduct(@RequestBody Product newProduct){
+        Product product = productRepository.addProduct(newProduct);
+        if (product == null){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This product is already in the list");
+        }
+        return new ResponseEntity<String>(HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
@@ -42,25 +48,28 @@ import java.util.List;
     }
 
     @PutMapping("/{id}")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Product update(@PathVariable int id, @RequestBody Product product ) {
-        List<Product> products = productRepository.getAll();
-        if(id < products.size()) {
-            products.get(id).setName(product.getName());
-            products.get(id).setCategory(product.getCategory());
-            products.get(id).setPrice(product.getPrice());
-            return products.get(id);
+    public ResponseEntity<String> update(@PathVariable int id, @RequestBody Product product ) {
+        Product productCheck = productRepository.getOne(id);
+        if (productCheck == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Did not find this product");
         }
-        return null;
+
+        boolean updatedProduct = productRepository.checkName(product, id);
+
+        if (!updatedProduct){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "This product is already in the list");
+        }
+
+        productRepository.updateProduct(id, product);
+        return new ResponseEntity<String>(HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
     public Product delete(@PathVariable int id){
-        List<Product> products = productRepository.getAll();
-        if (id < products.size()) {
-            return products.remove(id);
+        Product product = productRepository.deleteProduct(id);
+        if (product == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Did not find this product");
         }
-        return null;
+        return product;
     }
-
 }

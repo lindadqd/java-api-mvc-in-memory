@@ -1,14 +1,15 @@
 package com.booleanuk.api.products.model;
 
 public class Product {
-    static int nextId = 0;
+    public static int nextId = 0;
     private int id;
     private String name;
     private String category;
     private int price;
 
     public Product(String name, String category, int price){
-        this.id = nextId++;
+        this.id = nextId;
+        nextId++;
         this.name = name;
         this.category = category;
         this.price = price;
